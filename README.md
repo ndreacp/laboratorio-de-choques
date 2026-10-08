@@ -4,4 +4,4 @@ Página interactiva para aprender **cantidad de movimiento (momento lineal) y su
 
 Basada en la lectura preclase “Momento lineal y su conservación”.
 
-**Abrir la página:** https://andrea-1c.github.io/laboratorio-de-choques/
+**Abrir la página:** https://ndreacp.github.io/laboratorio-de-choques/
