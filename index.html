@@ -1,0 +1,859 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Laboratorio de Choques</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Young+Serif&family=Lexend:wght@300;400;600;700&family=IBM+Plex+Mono:wght@400;600&family=STIX+Two+Text:ital,wght@0,500;1,500&display=swap">
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
+<script>
+  tailwind.config = {
+    theme: { extend: {
+      colors: {
+        bg: 'var(--bg)', surface: 'var(--surface)', sunk: 'var(--sunk)', ink: 'var(--ink)', muted: 'var(--muted)', line: 'var(--line)',
+        ca: 'var(--a)', cb: 'var(--b)', casoft: 'var(--a-soft)', cbsoft: 'var(--b-soft)',
+        ok: 'var(--ok)', oksoft: 'var(--ok-soft)', bad: 'var(--bad)', badsoft: 'var(--bad-soft)'
+      },
+      fontFamily: { display: 'var(--f-display)', body: 'var(--f-body)', mono: 'var(--f-mono)', math: 'var(--f-math)' }
+    } }
+  };
+</script>
+<style>
+  /* Layout: a warm study desk. Route, guided lessons, air-track lab, practice workbench; sticky progress strip. Palette: paper, cocoa ink, caramel cart A, olive cart B. */
+  :root {
+    --bg: #F3EBDD; --surface: #FBF6EE; --sunk: #EADFCB; --ink: #3B2A1E; --muted: #7A6250; --line: #DCCDB5;
+    --a: #B5652A; --a-soft: #F2DEC8; --b: #6F7A3A; --b-soft: #E6E6CF;
+    --ok: #5B7A34; --ok-soft: #E3EBD2; --bad: #A8432F; --bad-soft: #F3D9CF;
+    --f-display: 'Young Serif', Georgia, 'Times New Roman', serif;
+    --f-body: 'Lexend', system-ui, -apple-system, 'Segoe UI', sans-serif;
+    --f-mono: 'IBM Plex Mono', ui-monospace, Menlo, Consolas, monospace;
+    --f-math: 'STIX Two Text', 'Cambria Math', 'Times New Roman', serif;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+    --bg: #1E1712; --surface: #2A2019; --sunk: #17110D; --ink: #F1E6D6; --muted: #B8A48F; --line: #42352A;
+    --a: #D88A4A; --a-soft: #3D2817; --b: #A9B566; --b-soft: #2D3119;
+    --ok: #9BC06A; --ok-soft: #263018; --bad: #E07A5F; --bad-soft: #3F2018; color-scheme: dark;
+  } }
+  :root[data-theme="dark"] {
+    --bg: #1E1712; --surface: #2A2019; --sunk: #17110D; --ink: #F1E6D6; --muted: #B8A48F; --line: #42352A;
+    --a: #D88A4A; --a-soft: #3D2817; --b: #A9B566; --b-soft: #2D3119;
+    --ok: #9BC06A; --ok-soft: #263018; --bad: #E07A5F; --bad-soft: #3F2018; color-scheme: dark;
+  }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 16px; line-height: 1.6; font-weight: 400; }
+  b, strong, .font-semibold { font-weight: 600; }
+  h1, h2, h3, .font-display { font-family: var(--f-display); font-weight: 400 !important; text-wrap: balance; letter-spacing: -0.005em; }
+  .eyebrow { font-family: var(--f-mono); font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+  .num { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+  .math { font-family: var(--f-math); font-style: italic; }
+  .vec { position: relative; display: inline-block; }
+  .vec::after { content: '\2192'; position: absolute; left: 50%; transform: translateX(-50%); top: -0.72em; font-size: .62em; font-style: normal; }
+  .formula { font-family: var(--f-math); font-size: 1.35rem; background: var(--sunk); border: 1px solid var(--line); border-radius: 10px; padding: 14px 18px; text-align: center; overflow-x: auto; }
+  .prose-w { max-width: 66ch; }
+  :focus-visible { outline: 3px solid var(--a); outline-offset: 2px; }
+  .tab[aria-selected="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .tab .dot { width: 8px; height: 8px; border-radius: 99px; background: var(--line); }
+  .tab.read .dot { background: var(--ok); }
+  input[type=range] { accent-color: var(--ink); width: 100%; }
+  .opt[data-state="right"] { background: var(--ok-soft); border-color: var(--ok); }
+  .opt[data-state="wrong"] { background: var(--bad-soft); border-color: var(--bad); }
+  .chip[aria-pressed="true"] { outline: 3px solid var(--a); outline-offset: 1px; }
+  .chip.locked { background: var(--ok-soft); border-color: var(--ok); cursor: default; }
+  .bin.over, .bin.armed { border-color: var(--a); background: var(--a-soft); }
+  .shake { animation: shake .35s; }
+  @keyframes shake { 25% { transform: translateX(-6px) } 50% { transform: translateX(6px) } 75% { transform: translateX(-3px) } }
+  .flip { perspective: 900px; }
+  .flip-inner { position: relative; transition: transform .5s; transform-style: preserve-3d; min-height: 190px; }
+  .flip.on .flip-inner { transform: rotateY(180deg); }
+  .face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+  .face.back { transform: rotateY(180deg); }
+  .toast { transition: opacity .25s, transform .25s; }
+  #bar { transition: width .5s cubic-bezier(.2,.8,.2,1); }
+  @media (prefers-reduced-motion: reduce) { .flip-inner, #bar, .toast { transition: none; } .shake { animation: none; } }
+</style>
+</head>
+<body>
+
+
+<!-- Sticky progress strip -->
+<header class="sticky z-30 border-b border-line bg-surface" style="top: env(safe-area-inset-top, 0px)">
+  <div class="mx-auto max-w-6xl px-4 py-3 flex flex-wrap items-center gap-x-5 gap-y-2">
+    <a href="#ruta" class="flex items-center gap-2 font-display font-black text-lg tracking-tight text-ink no-underline">
+      <span class="math text-2xl" aria-hidden="true"><span class="vec">p</span></span> Laboratorio de Choques
+    </a>
+    <div class="flex-1 min-w-[180px]">
+      <div class="flex justify-between text-xs text-muted mb-1">
+        <span id="levelName" class="font-semibold">Principiante</span>
+        <span class="num"><span id="pct">0</span>% completado</span>
+      </div>
+      <div class="h-2.5 rounded-full bg-sunk overflow-hidden" role="progressbar" aria-label="Progreso" aria-valuemin="0" aria-valuemax="100" id="barWrap">
+        <div id="bar" class="h-full rounded-full" style="width:0%; background: linear-gradient(90deg, var(--a), var(--b));"></div>
+      </div>
+    </div>
+    <div class="flex items-center gap-3">
+      <div class="text-right leading-tight">
+        <div class="eyebrow">Puntos</div>
+        <div class="num font-semibold text-xl" id="points">0</div>
+      </div>
+      <button id="resetBtn" class="text-xs border border-line rounded-md px-2.5 py-1.5 text-muted hover:text-ink">Reiniciar progreso</button>
+    </div>
+  </div>
+  <div id="toast" class="toast pointer-events-none absolute right-4 top-full mt-2 rounded-md bg-ink text-bg px-3 py-1.5 num text-sm opacity-0 -translate-y-1">+10</div>
+</header>
+
+<main class="mx-auto max-w-6xl px-4 py-8 flex flex-col gap-14">
+
+  <!-- ============ ROUTE ============ -->
+  <section id="ruta" class="flex flex-col gap-5">
+    <div class="prose-w">
+      <div class="eyebrow mb-2">Física · Momento lineal y su conservación</div>
+      <h1 class="text-3xl sm:text-5xl font-black leading-[1.05]">Aprende la cantidad de movimiento desde cero.</h1>
+      <p class="mt-3 text-muted">Primero entiendes la teoría, una lección corta a la vez. Cada lección termina con una pregunta para comprobar que la entendiste y desbloquear la siguiente. Después la aplicas en el laboratorio y la practicas.</p>
+    </div>
+    <ol class="grid sm:grid-cols-3 gap-3">
+      <li><a href="#lecciones" class="route block rounded-xl border border-line bg-surface p-4 h-full no-underline text-ink hover:border-ink">
+        <div class="eyebrow">Paso 1 · Aprende</div><div class="font-display font-extrabold text-lg mt-1">5 lecciones de teoría</div>
+        <div class="text-sm text-muted mt-1"><span class="num" id="rLessons">0/5</span> completadas</div></a></li>
+      <li><a href="#lab" class="route block rounded-xl border border-line bg-surface p-4 h-full no-underline text-ink hover:border-ink">
+        <div class="eyebrow">Paso 2 · Experimenta</div><div class="font-display font-extrabold text-lg mt-1">Laboratorio de choques</div>
+        <div class="text-sm text-muted mt-1">Comprueba la teoría con un simulador</div></a></li>
+      <li><a href="#practica" class="route block rounded-xl border border-line bg-surface p-4 h-full no-underline text-ink hover:border-ink">
+        <div class="eyebrow">Paso 3 · Practica</div><div class="font-display font-extrabold text-lg mt-1">Cuestionario, clasificación y tarjetas</div>
+        <div class="text-sm text-muted mt-1"><span class="num" id="rPractice">0/28</span> ejercicios hechos</div></a></li>
+    </ol>
+  </section>
+
+  <!-- ============ LESSONS ============ -->
+  <section id="lecciones" class="flex flex-col gap-5 scroll-mt-24">
+    <div>
+      <div class="eyebrow mb-1">Paso 1 · Aprende</div>
+      <h2 class="text-2xl sm:text-3xl font-black">Lecciones</h2>
+    </div>
+    <div class="grid lg:grid-cols-[260px_1fr] gap-5 items-start">
+      <nav aria-label="Lecciones" id="lessonNav" class="flex lg:flex-col gap-2 overflow-x-auto pb-1"></nav>
+      <article id="lessonPanel" class="min-w-0 rounded-xl border border-line bg-surface p-5 sm:p-7 flex flex-col gap-5"></article>
+    </div>
+  </section>
+
+  <!-- ============ SIMULATOR ============ -->
+  <section id="lab" class="flex flex-col gap-5 scroll-mt-24">
+    <div class="prose-w">
+      <div class="eyebrow mb-1">Paso 2 · Experimenta</div>
+      <h2 class="text-2xl sm:text-3xl font-black">Laboratorio de choques</h2>
+      <p class="mt-2 text-muted">Un riel de aire de 6 m sin fricción. Ajusta masas, velocidades y el coeficiente de restitución <span class="math">e</span>, lanza los carritos y comprueba lo que aprendiste: la cantidad de movimiento total antes y después es la misma.</p>
+    </div>
+
+    <div class="grid lg:grid-cols-[1fr_320px] gap-5">
+      <div class="min-w-0 rounded-xl border border-line bg-surface p-4 flex flex-col gap-4">
+        <div id="trackBox" class="w-full"><canvas id="track" class="w-full block" height="190" aria-label="Simulación de dos carritos en un riel"></canvas></div>
+        <div class="flex flex-wrap gap-2 items-center">
+          <button id="launch" class="rounded-md bg-ink text-bg font-display font-bold px-4 py-2">Lanzar</button>
+          <button id="resetSim" class="rounded-md border border-line px-4 py-2">Volver al inicio</button>
+          <span class="eyebrow ml-1">Ejemplos:</span>
+          <button class="preset rounded-md border border-line px-3 py-1.5 text-sm" data-p="pdf">Ejemplo de la lectura</button>
+          <button class="preset rounded-md border border-line px-3 py-1.5 text-sm" data-p="billar">Billar (e = 1)</button>
+          <button class="preset rounded-md border border-line px-3 py-1.5 text-sm" data-p="frontal">Choque frontal</button>
+        </div>
+        <p id="simMsg" class="text-sm text-muted min-h-[1.5em]"></p>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm num">
+            <thead><tr class="text-left text-muted border-b border-line">
+              <th class="py-2 pr-3 font-normal">Magnitud</th><th class="py-2 pr-3 font-normal">Antes</th><th class="py-2 pr-3 font-normal">Después</th>
+            </tr></thead>
+            <tbody>
+              <tr class="border-b border-line"><td class="py-2 pr-3"><span class="text-ca font-semibold">p<sub>A</sub></span> (kg·m/s)</td><td id="pAi"></td><td id="pAf"></td></tr>
+              <tr class="border-b border-line"><td class="py-2 pr-3"><span class="text-cb font-semibold">p<sub>B</sub></span> (kg·m/s)</td><td id="pBi"></td><td id="pBf"></td></tr>
+              <tr class="border-b border-line font-semibold"><td class="py-2 pr-3">p total (kg·m/s)</td><td id="pTi"></td><td id="pTf"></td></tr>
+              <tr><td class="py-2 pr-3">K total (J)</td><td id="Ki"></td><td id="Kf"></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div id="verdict" class="flex flex-wrap gap-2 text-sm"></div>
+      </div>
+
+      <div class="rounded-xl border border-line bg-surface p-4 flex flex-col gap-4">
+        <fieldset class="flex flex-col gap-3">
+          <legend class="font-display font-extrabold text-ca mb-1">Carrito A</legend>
+          <label class="text-sm" for="mA">Masa <span class="num float-right" id="mAv"></span></label>
+          <input type="range" id="mA" min="0.5" max="5" step="0.5" value="2">
+          <label class="text-sm" for="vA">Velocidad <span class="num float-right" id="vAv"></span></label>
+          <input type="range" id="vA" min="-6" max="6" step="0.5" value="4">
+        </fieldset>
+        <fieldset class="flex flex-col gap-3 border-t border-line pt-3">
+          <legend class="font-display font-extrabold text-cb mb-1 pt-3">Carrito B</legend>
+          <label class="text-sm" for="mB">Masa <span class="num float-right" id="mBv"></span></label>
+          <input type="range" id="mB" min="0.5" max="5" step="0.5" value="3">
+          <label class="text-sm" for="vB">Velocidad <span class="num float-right" id="vBv"></span></label>
+          <input type="range" id="vB" min="-6" max="6" step="0.5" value="0">
+        </fieldset>
+        <fieldset class="flex flex-col gap-3 border-t border-line pt-3">
+          <legend class="font-display font-extrabold mb-1 pt-3">Coeficiente de restitución</legend>
+          <label class="text-sm" for="eR"><span class="math">e</span> <span class="num float-right" id="eRv"></span></label>
+          <input type="range" id="eR" min="0" max="1" step="0.05" value="0">
+          <div class="flex justify-between text-[11px] text-muted"><span>0 · se pegan</span><span>1 · elástico</span></div>
+        </fieldset>
+        <p class="text-xs text-muted">Positivo = hacia la derecha. Negativo = hacia la izquierda.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ PRACTICE ============ -->
+  <section id="practica" class="flex flex-col gap-5 scroll-mt-24">
+    <div>
+      <div class="eyebrow mb-1">Paso 3 · Practica</div>
+      <h2 class="text-2xl sm:text-3xl font-black">Pon a prueba lo que aprendiste</h2>
+    </div>
+    <div id="practiceHint" class="rounded-lg bg-casoft p-4 text-sm prose-w" hidden>Te recomendamos terminar las 5 lecciones antes de practicar. Así cada ejercicio te servirá para aplicar lo que ya entendiste. <a href="#lecciones" class="font-semibold underline">Ir a las lecciones</a></div>
+    <div class="flex flex-wrap gap-2" role="tablist" id="practiceTabs">
+      <button class="tab ptab rounded-full border border-line px-4 py-2 text-sm font-semibold flex items-center gap-2" data-k="quiz" aria-selected="true">Cuestionario <span class="num text-xs opacity-70" id="cQuiz"></span></button>
+      <button class="tab ptab rounded-full border border-line px-4 py-2 text-sm font-semibold flex items-center gap-2" data-k="dnd" aria-selected="false">Clasifica el choque <span class="num text-xs opacity-70" id="cDnd"></span></button>
+      <button class="tab ptab rounded-full border border-line px-4 py-2 text-sm font-semibold flex items-center gap-2" data-k="cards" aria-selected="false">Tarjetas de memoria <span class="num text-xs opacity-70" id="cCards"></span></button>
+    </div>
+
+    <!-- Quiz -->
+    <div id="pane-quiz" class="rounded-xl border border-line bg-surface p-5 sm:p-7 flex flex-col gap-4">
+      <div class="flex flex-wrap gap-1.5" id="qDots" aria-label="Preguntas"></div>
+      <div class="eyebrow" id="qMeta"></div>
+      <h3 class="text-xl font-bold prose-w" id="qText"></h3>
+      <div class="grid sm:grid-cols-2 gap-2" id="qOpts"></div>
+      <div id="qFeedback" class="rounded-lg p-4 text-sm prose-w" hidden></div>
+      <div class="flex gap-2">
+        <button id="qPrev" class="rounded-md border border-line px-4 py-2">Anterior</button>
+        <button id="qNext" class="rounded-md bg-ink text-bg font-semibold px-4 py-2">Siguiente</button>
+      </div>
+    </div>
+
+    <!-- Drag & drop -->
+    <div id="pane-dnd" class="rounded-xl border border-line bg-surface p-5 sm:p-7 flex flex-col gap-4" hidden>
+      <p class="text-sm text-muted prose-w">Arrastra cada situación a su tipo de choque. En el celular: toca una situación y luego toca la caja correcta.</p>
+      <div id="pool" class="flex flex-wrap gap-2 min-h-[48px] p-3 rounded-lg bg-sunk border border-dashed border-line"></div>
+      <div class="grid md:grid-cols-3 gap-3" id="bins"></div>
+      <p id="dndMsg" class="text-sm min-h-[1.5em]"></p>
+    </div>
+
+    <!-- Flashcards -->
+    <div id="pane-cards" class="flex flex-col gap-3" hidden>
+      <p class="text-sm text-muted">Toca una tarjeta para darle la vuelta. Marca “Ya me la sé” cuando puedas responder sin mirar.</p>
+      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-3" id="cardGrid"></div>
+    </div>
+  </section>
+
+  <footer class="border-t border-line pt-5 text-xs text-muted">
+    Basado en la lectura preclase “Momento lineal y su conservación”. Tu progreso se guarda solo en este navegador.
+  </footer>
+</main>
+
+<script>
+(() => {
+  const $ = s => document.querySelector(s);
+  const fmt = (x, d = 2) => (Math.abs(x) < 0.005 ? 0 : x).toFixed(d).replace('.', ',');
+  const P = '<span class="math"><span class="vec">p</span></span>';
+  const V = '<span class="math"><span class="vec">v</span></span>';
+
+  /* ---------------- persistent state ---------------- */
+  const KEY = 'lab-choques-v2';
+  const fresh = () => ({ steps: {}, checks: {}, pos: [0, 0], quiz: {}, dnd: {}, cards: [], points: 0 });
+  let S = fresh();
+  try { const raw = localStorage.getItem(KEY); if (raw) S = Object.assign(S, JSON.parse(raw)); } catch (e) {}
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} };
+
+  /* ---------------- lessons ---------------- */
+  const F = (x, cls = '') => `<div class="formula ${cls}">${x}</div>`;
+  const NOTE = (x, tone = 'cbsoft') => `<div class="rounded-lg bg-${tone} p-4 text-sm">${x}</div>`;
+  const TRY = (p, t) => `<button data-preset="${p}" class="self-start rounded-md border border-ink px-4 py-2 text-sm font-semibold hover:bg-sunk">${t}</button>`;
+
+  const LESSONS = [
+    { t: '¿Qué es la cantidad de movimiento?', goal: 'Entender qué mide la cantidad de movimiento, cómo se calcula y por qué tiene signo.',
+      steps: [
+        { h: 'La pregunta de partida', b: `
+          <p>Imagina que vienen hacia ti dos carritos de supermercado a la <b>misma velocidad</b>: uno vacío y otro lleno de botellas. ¿Cuál te cuesta más detener?</p>
+          <p>El lleno. Ahora imagina dos carritos <b>iguales</b>: uno avanza despacio y otro viene empujado por alguien que corre. Cuesta más detener el rápido.</p>
+          ${NOTE('<b>Conclusión.</b> Lo difícil que es detener algo depende de dos ingredientes: <b>cuánta masa tiene</b> y <b>qué tan rápido se mueve</b>. A esa “dificultad para detenerlo” la física la llama <b>cantidad de movimiento</b> o <b>momento lineal</b>.', 'casoft')}` },
+        { h: 'La fórmula', b: `
+          <p>Como depende de la masa y de la velocidad, se define como su producto:</p>
+          ${F(`${P} = m ${V}`)}
+          <ul class="flex flex-col gap-1.5">
+            <li><span class="math">m</span> es la masa, en kilogramos (<span class="num">kg</span>).</li>
+            <li>${V} es la velocidad, en metros por segundo (<span class="num">m/s</span>).</li>
+            <li>${P} es la cantidad de movimiento. Sus unidades salen de multiplicar: <span class="num">kg × m/s = kg·m/s</span>.</li>
+          </ul>
+          <div class="grid sm:grid-cols-2 gap-3 text-sm">
+            <div class="rounded-lg border border-line p-4">Auto de <b class="num">1000 kg</b> a <b class="num">20 m/s</b><div class="num mt-1">p = 1000 × 20 = 20 000 kg·m/s</div></div>
+            <div class="rounded-lg border border-line p-4">Pelota de tenis de <b class="num">0,06 kg</b> a <b class="num">50 m/s</b><div class="num mt-1">p = 0,06 × 50 = 3 kg·m/s</div></div>
+          </div>
+          <p class="text-sm text-muted">La pelota va más rápido, pero el auto tiene muchísima más cantidad de movimiento por su masa.</p>` },
+        { h: 'Es un vector: importa la dirección', b: `
+          <p>Un <b>vector</b> es una magnitud que tiene valor y también dirección. La velocidad es un vector (no es lo mismo ir a 5 m/s hacia la derecha que hacia la izquierda), y como ${P} = m${V} y la masa siempre es positiva, <b>la cantidad de movimiento tiene la misma dirección que la velocidad</b>.</p>
+          <p>En problemas de una dimensión usamos signos:</p>
+          <div class="grid grid-cols-2 gap-3 text-sm num">
+            <div class="rounded-lg bg-cbsoft p-4 text-center">Hacia la derecha<div class="text-2xl font-semibold mt-1">+</div></div>
+            <div class="rounded-lg bg-casoft p-4 text-center">Hacia la izquierda<div class="text-2xl font-semibold mt-1">−</div></div>
+          </div>
+          <p>Ejemplo: una pelota de 0,5 kg que va a 4 m/s <b>hacia la izquierda</b> tiene <span class="num">p = 0,5 × (−4) = −2 kg·m/s</span>.</p>
+          ${NOTE('<b>Error común.</b> Olvidar el signo. El signo no indica que la cantidad de movimiento sea “menor”; solo dice hacia dónde apunta.', 'badsoft')}` },
+        { h: 'Cantidad de movimiento de un sistema de partículas', b: `
+          <p>Un <b>sistema</b> es el grupo de objetos que decides estudiar juntos, por ejemplo “los dos autos que chocan”. Su cantidad de movimiento es la <b>suma</b> de la cantidad de movimiento de cada partícula, respetando los signos:</p>
+          ${F(`${P}<sub>sis</sub> = m<sub>1</sub>${V}<sub>1</sub> + m<sub>2</sub>${V}<sub>2</sub> + m<sub>3</sub>${V}<sub>3</sub> + …`)}
+          <div class="rounded-lg border border-line p-4 text-sm">
+            <b>Ejemplo.</b> Un carrito de 2 kg va a +3 m/s y otro de 3 kg va a −2 m/s.
+            <div class="num mt-2">p<sub>sis</sub> = (2)(3) + (3)(−2) = 6 − 6 = 0 kg·m/s</div>
+            <p class="mt-2">¡Los dos se mueven, pero la cantidad de movimiento del sistema es cero! Sus cantidades de movimiento son iguales y opuestas, y se cancelan.</p>
+          </div>` }
+      ],
+      check: { q: 'Un ciclista de 80 kg va a 5 m/s y una pelota de 0,4 kg va a 25 m/s. ¿Quién tiene más cantidad de movimiento?', o: ['La pelota, porque va 5 veces más rápido', 'El ciclista', 'Tienen la misma', 'No se puede saber sin la dirección'], a: 1, e: 'Ciclista: 80 × 5 = 400 kg·m/s. Pelota: 0,4 × 25 = 10 kg·m/s. La cantidad de movimiento depende de la masa y de la velocidad a la vez; el ciclista tiene 200 veces más masa.' } },
+
+    { t: 'Conservación de la cantidad de movimiento', goal: 'Saber cuándo la cantidad de movimiento de un sistema no cambia y cómo usarlo para resolver problemas.',
+      steps: [
+        { h: 'Fuerzas internas y externas', b: `
+          <p>Cuando eliges un sistema, las fuerzas se dividen en dos grupos:</p>
+          <div class="grid sm:grid-cols-2 gap-3 text-sm">
+            <div class="rounded-lg border border-line p-4"><b>Internas</b><p class="mt-1">Las que se hacen entre sí los objetos <b>del</b> sistema. Ejemplo: la fuerza que el auto A hace sobre el auto B durante el choque.</p></div>
+            <div class="rounded-lg border border-line p-4"><b>Externas</b><p class="mt-1">Las que hace algo <b>de fuera</b> del sistema. Ejemplo: el peso (lo hace la Tierra) y la normal (la hace el piso).</p></div>
+          </div>
+          ${NOTE('<b>Analogía.</b> Piensa en una familia como sistema y en el dinero como la cantidad de movimiento. Si los hermanos se prestan dinero entre ellos (fuerzas internas), el total de la familia no cambia. Solo cambia si alguien de afuera les da o les quita dinero (fuerzas externas).', 'casoft')}` },
+        { h: 'La segunda ley de Newton, en su forma general', b: `
+          <p>Newton escribió su segunda ley en términos de la cantidad de movimiento:</p>
+          ${F(`Σ<span class="vec">F</span><sub>ext</sub> = d${P}<sub>sis</sub> / dt`)}
+          <p>Se lee así: <b>la suma de las fuerzas externas es igual a la rapidez con que cambia la cantidad de movimiento del sistema</b>.</p>
+          <p>Fíjate que solo aparecen las fuerzas <b>externas</b>. Las internas vienen en pares de acción y reacción (tercera ley de Newton), con igual magnitud y sentidos opuestos, así que al sumarlas se cancelan.</p>` },
+        { h: 'El principio de conservación', b: `
+          <p>Si el sistema está <b>aislado</b>, es decir, si la suma de fuerzas externas es cero:</p>
+          ${F(`Σ<span class="vec">F</span><sub>ext</sub> = 0 &nbsp;→&nbsp; d${P}<sub>sis</sub>/dt = 0`)}
+          <p>Si algo no cambia con el tiempo, es constante. Por lo tanto:</p>
+          ${F(`${P}<sub>inicial</sub> = ${P}<sub>final</sub>`)}
+          ${NOTE('<b>En palabras.</b> Si nada de afuera empuja al sistema, la cantidad de movimiento del sistema antes de un evento es igual a la de después. Los objetos pueden intercambiar cantidad de movimiento entre ellos, pero la suma no cambia.')}` },
+        { h: 'Aplicado al choque de dos autos', b: `
+          <p>Sigamos el razonamiento de la lectura, con el sistema “auto A + auto B”:</p>
+          <ol class="list-decimal ml-5 flex flex-col gap-2">
+            <li><b>Eje y:</b> sobre cada auto actúan su peso y la normal. Como no saltan ni se hunden, están en equilibrio: <span class="num">N<sub>A</sub> = m<sub>A</sub>g</span> y <span class="num">N<sub>B</sub> = m<sub>B</sub>g</span>. Las externas en y se anulan.</li>
+            <li><b>Eje x:</b> durante el choque, A empuja a B con <span class="math">F<sub>AB</sub></span> y B empuja a A con <span class="math">F<sub>BA</sub></span>. Por la tercera ley, <span class="math">F<sub>AB</sub> = F<sub>BA</sub></span>.</li>
+            <li>Para el sistema: <span class="num">ΣF<sub>x</sub> = F<sub>AB</sub> − F<sub>BA</sub> = 0</span>.</li>
+          </ol>
+          <p>La suma de fuerzas externas es cero, así que la cantidad de movimiento del sistema se conserva:</p>
+          ${F(`m<sub>A</sub>${V}<sub>Ai</sub> + m<sub>B</sub>${V}<sub>Bi</sub> = m<sub>A</sub>${V}<sub>Af</sub> + m<sub>B</sub>${V}<sub>Bf</sub>`, '!text-lg')}
+          <p class="text-sm text-muted">El subíndice <i>i</i> significa inicial (antes del choque) y <i>f</i> significa final (después).</p>` },
+        { h: 'Receta para resolver problemas', b: `
+          <ol class="list-decimal ml-5 flex flex-col gap-1.5">
+            <li>Define el sistema y elige qué dirección es positiva.</li>
+            <li>Escribe la cantidad de movimiento del sistema <b>antes</b>.</li>
+            <li>Escribe la cantidad de movimiento del sistema <b>después</b>.</li>
+            <li>Iguálalos y despeja la incógnita.</li>
+          </ol>
+          <div class="rounded-lg border border-line p-4 text-sm">
+            <b>Ejemplo.</b> Dos patinadores en reposo, de 60 kg y 40 kg, se empujan. El de 40 kg sale a +3 m/s. ¿Qué pasa con el de 60 kg?
+            <div class="num mt-2 flex flex-col gap-1">
+              <span>Antes: p = 0 (están quietos)</span>
+              <span>Después: p = (40)(3) + (60)v</span>
+              <span>0 = 120 + 60v → v = −2 m/s</span>
+            </div>
+            <p class="mt-2">Sale a 2 m/s en sentido contrario. La cantidad de movimiento del sistema sigue siendo cero.</p>
+          </div>` }
+      ],
+      check: { q: '¿Cuál es la condición para que la cantidad de movimiento de un sistema se conserve?', o: ['Que no existan fuerzas internas', 'Que la suma de fuerzas externas sea cero', 'Que la energía cinética se conserve', 'Que los objetos tengan la misma masa'], a: 1, e: 'De ΣF_ext = dp/dt: si ΣF_ext = 0, la cantidad de movimiento no cambia. Las fuerzas internas sí pueden existir (en un choque son enormes), pero se cancelan por pares de acción y reacción.' } },
+
+    { t: 'Tipos de choques', goal: 'Distinguir choques elásticos, inelásticos y completamente inelásticos según lo que pasa con la energía.',
+      steps: [
+        { h: 'Cantidad de movimiento y energía en un choque', b: `
+          <p>En un choque, los objetos se empujan con fuerzas internas muy grandes durante muy poco tiempo. Por eso <b>la cantidad de movimiento del sistema se conserva en todos los choques</b>.</p>
+          <p>Lo que cambia de un tipo de choque a otro es la <b>energía cinética</b>:</p>
+          ${F('K = ½ m v²')}
+          <p class="text-sm">A diferencia de la cantidad de movimiento, <span class="math">K</span> no es un vector: no tiene dirección y nunca es negativa, porque la velocidad va al cuadrado.</p>
+          ${NOTE('<b>Pregunta clave para clasificar un choque:</b> ¿la energía cinética total después es igual a la de antes? ¿Los objetos quedan pegados?', 'casoft')}` },
+        { h: 'Choque elástico', b: `
+          <div class="flex gap-2 text-xs num"><span class="rounded bg-oksoft text-ok px-2 py-0.5">p se conserva</span><span class="rounded bg-oksoft text-ok px-2 py-0.5">K se conserva</span></div>
+          <p>Los objetos rebotan sin deformarse y sin perder energía. Se conservan las dos cosas. Ejemplo casi ideal: dos bolas de billar.</p>
+          <p>Si la bola 2 está en reposo al inicio:</p>
+          ${F('m<sub>1</sub>v<sub>1i</sub> = m<sub>1</sub>v<sub>1f</sub> + m<sub>2</sub>v<sub>2f</sub>', '!text-lg')}
+          ${F('½m<sub>1</sub>v<sub>1i</sub>² = ½m<sub>1</sub>v<sub>1f</sub>² + ½m<sub>2</sub>v<sub>2f</sub>²', '!text-lg')}
+          ${NOTE('Ojo: en la lectura el último término aparece como ½m<sub>1</sub>v<sub>2f</sub>². Lo correcto es m<sub>2</sub>, porque es la energía de la bola 2.', 'badsoft')}
+          ${TRY('billar', 'Pruébalo: billar con masas iguales')}
+          <p class="text-sm text-muted">Con masas iguales verás algo curioso: la bola que venía se detiene y la otra sale con toda su velocidad.</p>` },
+        { h: 'Choque inelástico', b: `
+          <div class="flex gap-2 text-xs num"><span class="rounded bg-oksoft text-ok px-2 py-0.5">p se conserva</span><span class="rounded bg-badsoft text-bad px-2 py-0.5">K no se conserva</span></div>
+          <p>Los objetos rebotan, pero se deforman y parte de la energía cinética se transforma en calor, sonido y deformación.</p>
+          ${F('K<sub>i</sub> ≠ K<sub>f</sub> &nbsp;(K<sub>f</sub> &lt; K<sub>i</sub>)')}
+          <p>Ejemplo: un auto choca con otro detenido; ambos quedan abollados y se mueven, cada uno con su velocidad.</p>
+          ${NOTE('La energía no desaparece: se transforma. Por eso los choques reales suenan y los objetos se calientan un poco.')}` },
+        { h: 'Choque completamente inelástico', b: `
+          <div class="flex gap-2 text-xs num"><span class="rounded bg-oksoft text-ok px-2 py-0.5">p se conserva</span><span class="rounded bg-badsoft text-bad px-2 py-0.5">K no se conserva</span></div>
+          <p>Es un caso especial del inelástico: después del choque <b>los objetos quedan unidos</b> y se mueven como un solo cuerpo, con una sola velocidad final <span class="math">v<sub>f</sub></span>.</p>
+          ${F('m<sub>1</sub>v<sub>1i</sub> + m<sub>2</sub>v<sub>2i</sub> = (m<sub>1</sub> + m<sub>2</sub>) v<sub>f</sub>', '!text-lg')}
+          <p>Ejemplos: vagones de tren que se acoplan, un dardo que se clava en un blanco, dos bolas de plastilina que se pegan. Es el tipo de choque que más energía pierde.</p>` },
+        { h: 'Resumen de los tres tipos', b: `
+          <div class="overflow-x-auto"><table class="w-full text-sm">
+            <thead><tr class="text-left border-b border-line text-muted"><th class="py-2 pr-3 font-normal">Tipo</th><th class="py-2 pr-3 font-normal">¿p se conserva?</th><th class="py-2 pr-3 font-normal">¿K se conserva?</th><th class="py-2 font-normal">Después del choque</th></tr></thead>
+            <tbody>
+              <tr class="border-b border-line"><td class="py-2 pr-3 font-semibold">Elástico</td><td class="text-ok">Sí</td><td class="text-ok">Sí</td><td>Rebotan</td></tr>
+              <tr class="border-b border-line"><td class="py-2 pr-3 font-semibold">Inelástico</td><td class="text-ok">Sí</td><td class="text-bad">No</td><td>Rebotan, con pérdida de energía</td></tr>
+              <tr><td class="py-2 pr-3 font-semibold">Completamente inelástico</td><td class="text-ok">Sí</td><td class="text-bad">No</td><td>Quedan unidos</td></tr>
+            </tbody></table></div>
+          ${NOTE('<b>Para explicárselo a alguien:</b> “En todo choque se conserva la cantidad de movimiento. La energía cinética solo se conserva si es elástico. Y si quedan pegados, es completamente inelástico.”', 'casoft')}` }
+      ],
+      check: { q: 'Dos autos chocan, quedan abollados y luego se separan, cada uno por su lado. ¿Qué tipo de choque es?', o: ['Elástico', 'Inelástico', 'Completamente inelástico', 'No se conserva la cantidad de movimiento'], a: 1, e: 'Se deforman, así que se pierde energía cinética (no es elástico). Pero se separan, así que no es completamente inelástico. Es inelástico, y la cantidad de movimiento sí se conserva.' } },
+
+    { t: 'Coeficiente de restitución', goal: 'Medir con un número qué tan elástico es un choque y usarlo para clasificarlo.',
+      steps: [
+        { h: 'Velocidad relativa', b: `
+          <p>La <b>velocidad relativa</b> de A respecto a B es la diferencia <span class="math">v<sub>A</sub> − v<sub>B</sub></span>. Indica qué tan rápido se acercan o se alejan uno del otro.</p>
+          <div class="rounded-lg border border-line p-4 text-sm">
+            <b>Ejemplo.</b> A va a +4 m/s y B está quieto (0 m/s).
+            <div class="num mt-1">v<sub>A</sub> − v<sub>B</sub> = 4 − 0 = 4 m/s</div>
+            <p class="mt-1">A se acerca a B a 4 m/s.</p>
+          </div>
+          ${NOTE('<b>Analogía.</b> Si vas en bici a 20 km/h y tu amigo va delante a 15 km/h en la misma dirección, lo alcanzas a 5 km/h. Eso es la velocidad relativa.', 'casoft')}` },
+        { h: 'La fórmula de e', b: `
+          <p>El coeficiente de restitución compara la velocidad relativa <b>después</b> del choque con la de <b>antes</b>:</p>
+          ${F('e = − (v<sub>Af</sub> − v<sub>Bf</sub>) / (v<sub>Ai</sub> − v<sub>Bi</sub>)')}
+          <p><b>¿Por qué el signo menos?</b> Antes del choque se acercan y después se alejan, así que las dos velocidades relativas tienen signos opuestos. El signo menos hace que <span class="math">e</span> salga positivo.</p>
+          <div class="rounded-lg border border-line p-4 text-sm">
+            <b>Ejemplo.</b> Antes: v<sub>Ai</sub> = +4, v<sub>Bi</sub> = 0. Después: v<sub>Af</sub> = +1, v<sub>Bf</sub> = +3 (m/s).
+            <div class="num mt-1">e = −(1 − 3) / (4 − 0) = −(−2)/4 = 0,5</div>
+          </div>` },
+        { h: 'Qué te dice el valor de e', b: `
+          <p><span class="math">e</span> siempre está entre 0 y 1, y te dice directamente el tipo de choque:</p>
+          <div class="rounded-lg overflow-hidden border border-line">
+            <div class="grid grid-cols-[1fr_3fr_1fr] text-center num text-xs">
+              <div class="bg-badsoft p-2"><b>e = 0</b></div><div class="bg-casoft p-2"><b>0 &lt; e &lt; 1</b></div><div class="bg-oksoft p-2"><b>e = 1</b></div>
+            </div>
+            <div class="grid grid-cols-[1fr_3fr_1fr] text-center text-xs">
+              <div class="p-2">Completamente inelástico</div><div class="p-2 border-x border-line">Inelástico</div><div class="p-2">Elástico</div>
+            </div>
+          </div>
+          <ul class="text-sm flex flex-col gap-1.5">
+            <li><b>e = 1:</b> se alejan tan rápido como se acercaban. No se pierde energía.</li>
+            <li><b>e = 0:</b> la velocidad relativa después es cero, o sea, se mueven juntos.</li>
+          </ul>
+          ${NOTE('<b>Analogía.</b> Es como medir qué tan bien rebota algo. Una bola de plastilina contra el piso: e = 0. Una pelota saltarina: e cerca de 1. Una pelota de tenis: en medio.')}
+          ${TRY('frontal', 'Pruébalo: choque frontal con e = 0,4')}` }
+      ],
+      check: { q: 'Antes del choque: v_Ai = +6 m/s, v_Bi = 0. Después: v_Af = +1 m/s, v_Bf = +4 m/s. ¿Cuánto vale e y qué tipo de choque es?', o: ['e = 0,5 · inelástico', 'e = 1 · elástico', 'e = 0 · completamente inelástico', 'e = −0,5 · imposible'], a: 0, e: 'e = −(1 − 4)/(6 − 0) = −(−3)/6 = 0,5. Como está entre 0 y 1, es un choque inelástico.' } },
+
+    { t: 'Ejemplo práctico', goal: 'Juntar todo lo aprendido para resolver un problema completo, como en un examen.',
+      steps: [
+        { h: 'Lee e identifica', b: `
+          <div class="rounded-lg border border-line p-4">Sobre una mesa lisa, un cuerpo de <b class="num">m₁ = 2,00 kg</b> se mueve a <b class="num">v₁ = +4,00 m/s</b> hacia otro de <b class="num">m₂ = 3,00 kg</b> que está en reposo. Después del choque <b>se mueven juntos</b>. ¿Con qué velocidad?</div>
+          <ul class="flex flex-col gap-1.5 text-sm">
+            <li><b>Mesa lisa:</b> no hay fricción, la suma de fuerzas externas horizontales es cero → <b>la cantidad de movimiento se conserva</b>.</li>
+            <li><b>Se mueven juntos:</b> choque <b>completamente inelástico</b>, una sola velocidad final.</li>
+            <li><b>Datos:</b> <span class="num">m₁ = 2,00 kg, v₁i = +4,00 m/s, m₂ = 3,00 kg, v₂i = 0</span>.</li>
+          </ul>` },
+        { h: 'Plantea la ecuación', b: `
+          <p>Cantidad de movimiento antes = cantidad de movimiento después. Como quedan unidos, después hay un solo cuerpo de masa <span class="math">m₁ + m₂</span>:</p>
+          ${F('m<sub>1</sub>v<sub>1i</sub> + m<sub>2</sub>v<sub>2i</sub> = (m<sub>1</sub> + m<sub>2</sub>) v<sub>f</sub>', '!text-lg')}` },
+        { h: 'Sustituye y resuelve', b: `
+          <div class="num flex flex-col gap-2 text-base">
+            <span>(2,00)(4,00) + (3,00)(0) = (5,00) v<sub>f</sub></span>
+            <span>8,00 = 5,00 v<sub>f</sub></span>
+            <span class="font-semibold">v<sub>f</sub> = +1,60 m/s</span>
+          </div>
+          <p>El signo positivo indica que el conjunto sigue moviéndose hacia la derecha, en la dirección en que venía el primer cuerpo.</p>` },
+        { h: 'Verifica con energía', b: `
+          <div class="num flex flex-col gap-1">
+            <span>K<sub>i</sub> = ½(2,00)(4,00)² = 16,0 J</span>
+            <span>K<sub>f</sub> = ½(5,00)(1,60)² = 6,40 J</span>
+          </div>
+          <p>Se perdieron <b class="num">9,60 J</b> (60 %), que se transformaron en deformación y calor. Tiene sentido: en un choque completamente inelástico la energía cinética no se conserva.</p>
+          <p class="text-sm">Y si calculas e: después ambos van a 1,60 m/s, la velocidad relativa final es 0, así que e = 0. Todo es coherente.</p>
+          ${TRY('pdf', 'Míralo en el laboratorio')}` }
+      ],
+      check: { q: 'Un carrito de 1 kg va a +6 m/s y choca con otro de 2 kg en reposo. Quedan unidos. ¿Cuál es la velocidad final?', o: ['+3 m/s', '+2 m/s', '+6 m/s', '+1 m/s'], a: 1, e: '(1)(6) + (2)(0) = (1 + 2)·v_f → 6 = 3·v_f → v_f = +2 m/s.' } }
+  ];
+
+  const QUIZ = [
+    { q: '¿En qué unidades se mide la cantidad de movimiento en el SI?', o: ['kg·m/s', 'kg·m/s²', 'J', 'N'], a: 0, e: 'p = m·v, así que sus unidades son kg × m/s = kg·m/s. kg·m/s² es el newton (fuerza) y J es energía.' },
+    { q: 'Una pelota de 0,5 kg se mueve a 4 m/s hacia la izquierda. ¿Cuál es su cantidad de movimiento?', o: ['+2 kg·m/s', '−2 kg·m/s', '−8 kg·m/s', '+0,125 kg·m/s'], a: 1, e: 'p = (0,5)(−4) = −2 kg·m/s. El signo negativo indica que va hacia la izquierda: la cantidad de movimiento tiene la dirección de la velocidad.' },
+    { q: '¿Qué condición se necesita para que la cantidad de movimiento de un sistema se conserve?', o: ['Que no haya fuerzas internas', 'Que la energía cinética se conserve', 'Que la suma de fuerzas externas sea cero', 'Que los cuerpos tengan la misma masa'], a: 2, e: 'De ΣF_ext = dp/dt: si ΣF_ext = 0, entonces dp/dt = 0 y p es constante. Las fuerzas internas sí pueden existir; se cancelan entre ellas.' },
+    { q: 'En el choque de dos autos, ¿por qué las fuerzas F_AB y F_BA no cambian la cantidad de movimiento del sistema?', o: ['Porque son muy pequeñas', 'Porque son un par de acción y reacción y se cancelan', 'Porque actúan en el eje y', 'Porque el choque dura poco'], a: 1, e: 'Por la tercera ley de Newton tienen igual magnitud y sentidos opuestos. Al ser internas al sistema “dos autos”, su suma es cero.' },
+    { q: 'En un choque elástico se conserva…', o: ['Solo la cantidad de movimiento', 'Solo la energía cinética', 'La cantidad de movimiento y la energía cinética', 'Ninguno de los dos'], a: 2, e: 'Esa es la definición de choque elástico: p y K se conservan. En los inelásticos solo se conserva p.' },
+    { q: 'Dos cuerpos chocan y quedan pegados. ¿Cuánto vale e?', o: ['e = 1', 'e = 0,5', 'e = 0', 'e = −1'], a: 2, e: 'Si se mueven juntos, v_Af = v_Bf, así que la velocidad relativa después es 0 y e = 0. Es un choque completamente inelástico.' },
+    { q: 'Un cuerpo de 2,00 kg a +4,00 m/s choca con uno de 3,00 kg en reposo y se mueven juntos. ¿Cuál es la velocidad final?', o: ['+0,80 m/s', '+1,60 m/s', '+2,67 m/s', '+4,00 m/s'], a: 1, e: '(2)(4) + 0 = (2 + 3)·v_f → 8 = 5·v_f → v_f = +1,60 m/s.' },
+    { q: 'Un choque tiene e = 0,6. ¿De qué tipo es?', o: ['Elástico', 'Inelástico', 'Completamente inelástico', 'No es posible'], a: 1, e: 'Si 0 < e < 1 el choque es inelástico: rebotan, pero pierden parte de la energía cinética.' },
+    { q: 'En un choque inelástico, ¿a dónde va la energía cinética “perdida”?', o: ['Desaparece', 'Se convierte en cantidad de movimiento', 'Se transforma en calor, sonido y deformación', 'Se queda en el cuerpo más pesado'], a: 2, e: 'La energía no se destruye: se transforma en otras formas, como calor, sonido y la deformación de los cuerpos.' },
+    { q: 'Dos patinadores (60 kg y 40 kg) están en reposo y se empujan. El de 40 kg sale a +3 m/s. ¿Qué velocidad tiene el de 60 kg?', o: ['−3 m/s', '−2 m/s', '+2 m/s', '0 m/s'], a: 1, e: 'p inicial = 0. Entonces 0 = (40)(3) + (60)v → v = −120/60 = −2 m/s. Sale en sentido contrario.' },
+    { q: 'Un cuerpo de 2 kg va a +3 m/s y otro de 3 kg va a −2 m/s. ¿Cuál es la cantidad de movimiento del sistema?', o: ['12 kg·m/s', '0 kg·m/s', '6 kg·m/s', '−6 kg·m/s'], a: 1, e: 'p_total = (2)(3) + (3)(−2) = 6 − 6 = 0. Las cantidades de movimiento se suman como vectores, con signo.' },
+    { q: 'Una pelota de 0,4 kg a 25 m/s y un ciclista de 80 kg a 5 m/s. ¿Quién tiene más cantidad de movimiento?', o: ['La pelota, porque va más rápido', 'El ciclista', 'Tienen el mismo', 'No se puede saber'], a: 1, e: 'Pelota: 0,4 × 25 = 10 kg·m/s. Ciclista: 80 × 5 = 400 kg·m/s. La masa pesa tanto como la velocidad.' }
+  ];
+
+  const BINS = [
+    { k: 'el', t: 'Elástico', s: 'p y K se conservan' },
+    { k: 'in', t: 'Inelástico', s: 'Rebotan, K se pierde en parte' },
+    { k: 'ci', t: 'Completamente inelástico', s: 'Quedan unidos' }
+  ];
+  const ITEMS = [
+    { id: 'd1', t: 'Dos bolas de billar ideales chocan y la energía cinética total no cambia', b: 'el', h: 'Si K no cambia, el choque es elástico.' },
+    { id: 'd2', t: 'Un dardo se clava en un blanco de madera colgado', b: 'ci', h: 'El dardo y el blanco terminan moviéndose juntos.' },
+    { id: 'd3', t: 'Dos autos chocan, se abollan y luego se separan', b: 'in', h: 'Se separan (no quedan unidos), pero la abolladura gasta energía.' },
+    { id: 'd4', t: 'Dos vagones de tren se acoplan y siguen avanzando juntos', b: 'ci', h: 'Acoplarse significa quedar unidos: e = 0.' },
+    { id: 'd5', t: 'Una pelota de tenis choca con e = 0,7', b: 'in', h: '0 < e < 1 corresponde a un choque inelástico.' },
+    { id: 'd6', t: 'Dos carritos con imanes que se repelen chocan con e = 1', b: 'el', h: 'e = 1 es la marca de un choque elástico.' },
+    { id: 'd7', t: 'Una bola de plastilina golpea otra y quedan pegadas', b: 'ci', h: 'Quedan pegadas: completamente inelástico.' },
+    { id: 'd8', t: 'Un balón golpea la pared, se deforma un poco y rebota más lento', b: 'in', h: 'Rebota, pero con menos rapidez: perdió parte de K.' }
+  ];
+
+  const CARDS = [
+    { id: 'c1', f: '¿Cuál es la fórmula de la cantidad de movimiento?', b: 'p⃗ = m·v⃗, en kg·m/s. Es un vector con la dirección de la velocidad.' },
+    { id: 'c2', f: '¿Cuándo se conserva la cantidad de movimiento de un sistema?', b: 'Cuando la suma de fuerzas externas es cero (sistema aislado).' },
+    { id: 'c3', f: '¿Por qué las fuerzas del choque no cambian la cantidad de movimiento del sistema?', b: 'Son internas y forman un par acción-reacción: se cancelan.' },
+    { id: 'c4', f: '¿Qué se conserva en un choque elástico?', b: 'La cantidad de movimiento y la energía cinética.' },
+    { id: 'c5', f: '¿Qué distingue al choque completamente inelástico?', b: 'Los cuerpos quedan unidos y se mueven con la misma velocidad final.' },
+    { id: 'c6', f: 'Fórmula del coeficiente de restitución', b: 'e = −(v_Af − v_Bf) / (v_Ai − v_Bi)' },
+    { id: 'c7', f: 'Valores de e y tipos de choque', b: 'e = 1 elástico · 0 < e < 1 inelástico · e = 0 completamente inelástico' },
+    { id: 'c8', f: '¿Qué se conserva en los tres tipos de choque?', b: 'La cantidad de movimiento, siempre que el sistema esté aislado.' }
+  ];
+
+  /* ---------------- progress & points ---------------- */
+  const STEP_COUNT = LESSONS.reduce((n, l) => n + l.steps.length, 0);
+  const PRACTICE_TOTAL = QUIZ.length + ITEMS.length + CARDS.length;
+  const TOTAL = STEP_COUNT + LESSONS.length + PRACTICE_TOTAL;
+  const toastEl = $('#toast'); let toastT;
+  function addPoints(n) {
+    S.points += n; save(); render();
+    toastEl.textContent = '+' + n + ' pts';
+    toastEl.style.opacity = 1; toastEl.style.transform = 'translateY(0)';
+    clearTimeout(toastT); toastT = setTimeout(() => { toastEl.style.opacity = 0; toastEl.style.transform = 'translateY(-4px)'; }, 1100);
+  }
+  const lessonsDone = () => LESSONS.filter((_, i) => S.checks[i]).length;
+  function render() {
+    const quizDone = Object.keys(S.quiz).length, dndDone = Object.keys(S.dnd).length;
+    const practice = quizDone + dndDone + S.cards.length;
+    const done = Object.keys(S.steps).length + lessonsDone() + practice;
+    const pct = Math.round(done / TOTAL * 100);
+    $('#bar').style.width = pct + '%'; $('#pct').textContent = pct; $('#barWrap').setAttribute('aria-valuenow', pct);
+    $('#points').textContent = S.points;
+    $('#levelName').textContent = pct >= 100 ? 'Experto en choques' : pct >= 60 ? 'A toda velocidad' : pct >= 25 ? 'En movimiento' : 'Principiante';
+    $('#cQuiz').textContent = quizDone + '/' + QUIZ.length;
+    $('#cDnd').textContent = dndDone + '/' + ITEMS.length;
+    $('#cCards').textContent = S.cards.length + '/' + CARDS.length;
+    $('#rLessons').textContent = lessonsDone() + '/' + LESSONS.length;
+    $('#rPractice').textContent = practice + '/' + PRACTICE_TOTAL;
+    $('#practiceHint').hidden = lessonsDone() === LESSONS.length;
+  }
+  let armed = false, armT;
+  $('#resetBtn').addEventListener('click', () => {
+    if (!armed) { armed = true; $('#resetBtn').textContent = 'Toca otra vez para borrar'; armT = setTimeout(() => { armed = false; $('#resetBtn').textContent = 'Reiniciar progreso'; }, 3000); return; }
+    clearTimeout(armT); armed = false; $('#resetBtn').textContent = 'Reiniciar progreso';
+    S = fresh(); save(); qi = 0; ltries = {};
+    renderLesson(); renderQuiz(); buildDnd(); buildCards(); render();
+  });
+
+  /* ---------------- lessons ---------------- */
+  let ltries = {};
+  const unlocked = i => i === 0 || !!S.checks[i - 1];
+  function renderNav() {
+    const [cl] = S.pos;
+    $('#lessonNav').innerHTML = LESSONS.map((l, i) => {
+      const done = !!S.checks[i], open = unlocked(i), cur = i === cl;
+      const state = done ? '<span class="text-ok text-xs font-semibold">Completada ✓</span>' : open ? '<span class="text-xs text-muted">Disponible</span>' : '<span class="text-xs text-muted">Bloqueada · termina la anterior</span>';
+      return `<button data-l="${i}" ${open ? '' : 'disabled'} class="shrink-0 lg:shrink text-left rounded-lg border px-3 py-2.5 min-w-[200px] lg:min-w-0 ${cur ? 'border-ink bg-sunk' : 'border-line bg-surface'} ${open ? '' : 'opacity-50 cursor-not-allowed'}" ${cur ? 'aria-current="step"' : ''}>
+        <div class="eyebrow">Lección ${i + 1}</div><div class="font-semibold leading-snug">${l.t}</div>${state}</button>`;
+    }).join('');
+    document.querySelectorAll('#lessonNav button').forEach(b => b.addEventListener('click', () => { S.pos = [+b.dataset.l, 0]; save(); renderLesson(); }));
+  }
+  function renderLesson() {
+    let [cl, cs] = S.pos;
+    if (!unlocked(cl)) { cl = 0; cs = 0; S.pos = [0, 0]; }
+    const L = LESSONS[cl], n = L.steps.length, isCheck = cs >= n;
+    renderNav();
+    const dots = Array.from({ length: n + 1 }, (_, i) => `<span class="h-1.5 flex-1 rounded-full" style="background:${i < cs ? 'var(--ok)' : i === cs ? 'var(--ink)' : 'var(--line)'}"></span>`).join('');
+    let body;
+    if (!isCheck) {
+      body = `<h3 class="text-xl sm:text-2xl font-extrabold">${L.steps[cs].h}</h3><div class="prose-w flex flex-col gap-4">${L.steps[cs].b}</div>`;
+      const key = cl + '-' + cs;
+      if (!S.steps[key]) { S.steps[key] = 1; save(); setTimeout(() => addPoints(1), 0); }
+    } else {
+      const done = S.checks[cl];
+      body = `<div class="eyebrow">Comprueba lo que aprendiste</div><h3 class="text-xl font-bold prose-w">${L.check.q}</h3>
+        <div class="grid sm:grid-cols-2 gap-2" id="lOpts">${L.check.o.map((o, i) => `<button class="lopt opt text-left rounded-lg border border-line px-4 py-3 hover:border-ink" data-i="${i}">${o}</button>`).join('')}</div>
+        <div id="lFb" class="rounded-lg p-4 text-sm prose-w" hidden></div>`;
+      if (done) setTimeout(() => markCheck(L.check.a, true), 0);
+    }
+    const last = cl === LESSONS.length - 1;
+    const nextLabel = !isCheck ? (cs === n - 1 ? 'Ir a la pregunta' : 'Siguiente') : last ? 'Ir al laboratorio' : 'Siguiente lección';
+    $('#lessonPanel').innerHTML = `
+      <div class="flex flex-col gap-2">
+        <div class="flex justify-between gap-3 text-xs text-muted"><span class="eyebrow">Lección ${cl + 1} · ${L.t}</span><span class="num">${isCheck ? 'Pregunta' : 'Paso ' + (cs + 1) + ' de ' + n}</span></div>
+        <div class="flex gap-1.5">${dots}</div>
+        ${cs === 0 ? `<p class="text-sm text-muted"><b>Objetivo:</b> ${L.goal}</p>` : ''}
+      </div>
+      ${body}
+      <div class="flex gap-2 pt-2 border-t border-line">
+        <button id="lPrev" class="rounded-md border border-line px-4 py-2" ${cs === 0 ? 'disabled style="opacity:.4"' : ''}>Anterior</button>
+        <button id="lNext" class="rounded-md bg-ink text-bg font-semibold px-4 py-2" ${isCheck && !S.checks[cl] ? 'disabled style="opacity:.4"' : ''}>${nextLabel}</button>
+      </div>`;
+    $('#lPrev').addEventListener('click', () => { if (cs > 0) { S.pos = [cl, cs - 1]; save(); renderLesson(); } });
+    $('#lNext').addEventListener('click', () => {
+      if (!isCheck) S.pos = [cl, cs + 1];
+      else if (!S.checks[cl]) return;
+      else if (last) { $('#lab').scrollIntoView({ behavior: 'smooth' }); return; }
+      else S.pos = [cl + 1, 0];
+      save(); renderLesson(); $('#lecciones').scrollIntoView({ behavior: 'smooth' });
+    });
+    document.querySelectorAll('.lopt').forEach(b => b.addEventListener('click', () => {
+      if (S.checks[cl]) return;
+      const pick = +b.dataset.i, ok = pick === L.check.a;
+      if (ok) { S.checks[cl] = 1; save(); addPoints(ltries[cl] ? 5 : 10); renderLesson(); }
+      else { ltries[cl] = (ltries[cl] || 0) + 1; markCheck(pick, false); }
+    }));
+  }
+  function markCheck(pick, ok) {
+    const [cl] = S.pos, C = LESSONS[cl].check, fb = $('#lFb'); if (!fb) return;
+    document.querySelectorAll('.lopt').forEach(b => {
+      const i = +b.dataset.i; delete b.dataset.state;
+      if (ok) { b.disabled = true; if (i === C.a) b.dataset.state = 'right'; }
+      else if (i === pick) { b.dataset.state = 'wrong'; b.disabled = true; }
+    });
+    fb.hidden = false;
+    if (ok) {
+      fb.className = 'rounded-lg p-4 text-sm prose-w bg-oksoft';
+      fb.innerHTML = `<b class="text-ok">¡Correcto! Lección completada.</b><br>${C.e}` + (cl === LESSONS.length - 1 ? '<br><br><b>¡Terminaste la teoría!</b> Ahora aplícala en el laboratorio y en la zona de práctica.' : '');
+    } else {
+      fb.className = 'rounded-lg p-4 text-sm prose-w bg-badsoft';
+      fb.innerHTML = '<b class="text-bad">Todavía no.</b> Esa opción no es correcta. Puedes volver a los pasos con “Anterior” para repasar, o intentar con otra opción.';
+    }
+  }
+  $('#lessonPanel').addEventListener('click', e => {
+    const b = e.target.closest('[data-preset]'); if (!b) return;
+    preset(b.dataset.preset); $('#lab').scrollIntoView({ behavior: 'smooth' });
+  });
+
+  /* ---------------- quiz ---------------- */
+  let qi = 0;
+  function renderQuiz() {
+    const Q = QUIZ[qi], st = S.quiz[qi];
+    $('#qDots').innerHTML = QUIZ.map((_, i) => {
+      const s = S.quiz[i]; const c = s === undefined ? 'bg-sunk text-muted' : s.ok ? 'bg-oksoft text-ok' : 'bg-badsoft text-bad';
+      return `<button class="num text-xs w-8 h-8 rounded-md ${c} ${i === qi ? 'ring-2 ring-ink' : ''}" data-i="${i}" aria-label="Pregunta ${i + 1}">${i + 1}</button>`;
+    }).join('');
+    document.querySelectorAll('#qDots button').forEach(b => b.addEventListener('click', () => { qi = +b.dataset.i; renderQuiz(); }));
+    $('#qMeta').textContent = `Pregunta ${qi + 1} de ${QUIZ.length} · 10 pts al primer intento`;
+    $('#qText').textContent = Q.q;
+    $('#qOpts').innerHTML = Q.o.map((o, i) => `<button class="opt text-left rounded-lg border border-line px-4 py-3 hover:border-ink" data-i="${i}">${o}</button>`).join('');
+    const fb = $('#qFeedback');
+    if (st) showAnswer(st.pick); else fb.hidden = true;
+    document.querySelectorAll('.opt').forEach(b => b.addEventListener('click', () => {
+      if (S.quiz[qi]) return;
+      const pick = +b.dataset.i, ok = pick === Q.a;
+      S.quiz[qi] = { pick, ok }; save();
+      if (ok) addPoints(10); else render();
+      renderQuiz();
+    }));
+    $('#qPrev').disabled = qi === 0; $('#qPrev').style.opacity = qi === 0 ? .4 : 1;
+    $('#qNext').textContent = qi === QUIZ.length - 1 ? 'Ver resultado' : 'Siguiente';
+  }
+  function showAnswer(pick) {
+    const Q = QUIZ[qi], ok = pick === Q.a;
+    document.querySelectorAll('.opt').forEach(b => {
+      const i = +b.dataset.i; b.disabled = true; b.classList.remove('hover:border-ink');
+      if (i === Q.a) b.dataset.state = 'right'; else if (i === pick) b.dataset.state = 'wrong';
+    });
+    const fb = $('#qFeedback'); fb.hidden = false;
+    fb.className = 'rounded-lg p-4 text-sm prose-w ' + (ok ? 'bg-oksoft' : 'bg-badsoft');
+    fb.innerHTML = `<b class="${ok ? 'text-ok' : 'text-bad'}">${ok ? '¡Correcto!' : 'Casi. La respuesta correcta está en verde.'}</b><br>${Q.e}`;
+  }
+  $('#qPrev').addEventListener('click', () => { if (qi > 0) { qi--; renderQuiz(); } });
+  $('#qNext').addEventListener('click', () => {
+    if (qi < QUIZ.length - 1) { qi++; renderQuiz(); return; }
+    const answered = Object.keys(S.quiz).length, right = Object.values(S.quiz).filter(x => x.ok).length;
+    const fb = $('#qFeedback'); fb.hidden = false; fb.className = 'rounded-lg p-4 text-sm prose-w bg-cbsoft';
+    fb.innerHTML = answered < QUIZ.length
+      ? `Has respondido <b class="num">${answered}</b> de ${QUIZ.length}. Usa los números de arriba para ir a las que faltan.`
+      : `<b>Resultado: <span class="num">${right}/${QUIZ.length}</span> correctas.</b> ${right === QUIZ.length ? '¡Dominas el tema!' : 'Repasa las preguntas en rojo y vuelve a la teoría de ese punto.'}`;
+  });
+
+  /* ---------------- drag & drop ---------------- */
+  let selected = null, tries = {};
+  function buildDnd() {
+    $('#bins').innerHTML = BINS.map(b => `<div class="bin rounded-lg border-2 border-dashed border-line p-3 flex flex-col gap-2 min-h-[140px]" data-b="${b.k}" tabindex="0" role="button" aria-label="Colocar en ${b.t}">
+        <div><div class="font-display font-extrabold">${b.t}</div><div class="text-xs text-muted">${b.s}</div></div><div class="slot flex flex-col gap-2"></div></div>`).join('');
+    const pool = $('#pool'); pool.innerHTML = '';
+    ITEMS.forEach(it => {
+      const el = document.createElement('button');
+      el.className = 'chip text-left text-sm rounded-md border border-line bg-surface px-3 py-2 max-w-full';
+      el.textContent = it.t; el.dataset.id = it.id; el.draggable = true; el.setAttribute('aria-pressed', 'false');
+      if (S.dnd[it.id]) { el.classList.add('locked'); el.draggable = false; el.disabled = true; document.querySelector(`.bin[data-b="${it.b}"] .slot`).appendChild(el); }
+      else pool.appendChild(el);
+      el.addEventListener('click', () => {
+        if (el.disabled) return;
+        document.querySelectorAll('.chip').forEach(c => c.setAttribute('aria-pressed', 'false'));
+        selected = selected === it.id ? null : it.id;
+        if (selected) el.setAttribute('aria-pressed', 'true');
+        document.querySelectorAll('.bin').forEach(b => b.classList.toggle('armed', !!selected));
+      });
+      el.addEventListener('dragstart', e => { e.dataTransfer.setData('text/plain', it.id); selected = it.id; });
+    });
+    document.querySelectorAll('.bin').forEach(bin => {
+      bin.addEventListener('dragover', e => { e.preventDefault(); bin.classList.add('over'); });
+      bin.addEventListener('dragleave', () => bin.classList.remove('over'));
+      bin.addEventListener('drop', e => { e.preventDefault(); bin.classList.remove('over'); place(e.dataTransfer.getData('text/plain') || selected, bin); });
+      bin.addEventListener('click', () => { if (selected) place(selected, bin); });
+      bin.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && selected) { e.preventDefault(); place(selected, bin); } });
+    });
+    $('#dndMsg').textContent = Object.keys(S.dnd).length === ITEMS.length ? '¡Clasificaste todas las situaciones!' : '';
+  }
+  function place(id, bin) {
+    const it = ITEMS.find(x => x.id === id); if (!it || S.dnd[id]) return;
+    const chip = document.querySelector(`.chip[data-id="${id}"]`);
+    selected = null;
+    document.querySelectorAll('.bin').forEach(b => b.classList.remove('armed'));
+    chip.setAttribute('aria-pressed', 'false');
+    const msg = $('#dndMsg');
+    if (bin.dataset.b === it.b) {
+      S.dnd[id] = true; save();
+      chip.classList.add('locked'); chip.disabled = true; chip.draggable = false;
+      bin.querySelector('.slot').appendChild(chip);
+      addPoints(tries[id] ? 2 : 5);
+      msg.className = 'text-sm min-h-[1.5em] text-ok';
+      msg.textContent = Object.keys(S.dnd).length === ITEMS.length ? '¡Clasificaste todas las situaciones!' : 'Correcto. ' + it.h;
+    } else {
+      tries[id] = (tries[id] || 0) + 1;
+      chip.classList.remove('shake'); void chip.offsetWidth; chip.classList.add('shake');
+      msg.className = 'text-sm min-h-[1.5em] text-bad';
+      msg.textContent = 'No es ese tipo. Pista: ' + it.h;
+    }
+  }
+
+  /* ---------------- flashcards ---------------- */
+  function buildCards() {
+    $('#cardGrid').innerHTML = CARDS.map((c, i) => {
+      const known = S.cards.includes(c.id);
+      return `<div class="flip" data-id="${c.id}">
+        <div class="flip-inner">
+          <button class="face front w-full h-full rounded-xl border ${known ? 'border-ok' : 'border-line'} bg-surface p-4 flex flex-col justify-between text-left" aria-label="Voltear tarjeta ${i + 1}">
+            <span class="eyebrow">Tarjeta ${i + 1}${known ? ' · aprendida' : ''}</span>
+            <span class="font-display font-bold text-lg leading-snug">${c.f}</span>
+            <span class="text-xs text-muted">Toca para ver la respuesta</span>
+          </button>
+          <div class="face back rounded-xl border border-ink bg-ink text-bg p-4 flex flex-col justify-between gap-3">
+            <span class="leading-snug">${c.b}</span>
+            <div class="flex gap-2">
+              <button class="know rounded-md px-3 py-1.5 text-sm font-semibold" style="background:var(--ok);color:var(--surface)" ${known ? 'disabled' : ''}>${known ? 'Aprendida' : 'Ya me la sé'}</button>
+              <button class="back-btn rounded-md px-3 py-1.5 text-sm border" style="border-color:var(--muted)">Voltear</button>
+            </div>
+          </div>
+        </div></div>`;
+    }).join('');
+    document.querySelectorAll('.flip').forEach(f => {
+      f.querySelector('.front').addEventListener('click', () => f.classList.add('on'));
+      f.querySelector('.back-btn').addEventListener('click', () => f.classList.remove('on'));
+      f.querySelector('.know').addEventListener('click', () => {
+        const id = f.dataset.id; if (S.cards.includes(id)) return;
+        S.cards.push(id); save(); addPoints(3); buildCards();
+      });
+    });
+  }
+
+  /* ---------------- practice tabs ---------------- */
+  document.querySelectorAll('.ptab').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('.ptab').forEach(x => x.setAttribute('aria-selected', x === b));
+    ['quiz', 'dnd', 'cards'].forEach(k => $('#pane-' + k).hidden = k !== b.dataset.k);
+  }));
+
+  /* ---------------- simulator ---------------- */
+  const L = 6, W = 0.6;
+  const cv = $('#track'), ctx = cv.getContext('2d');
+  const ids = ['mA', 'vA', 'mB', 'vB', 'eR'];
+  let sim, raf, last;
+  const val = id => +$('#' + id).value;
+  const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+
+  function initSim() {
+    cancelAnimationFrame(raf);
+    sim = { xA: 1.0, xB: 3.4, vA: val('vA'), vB: val('vB'), running: false, collided: false, t: 0 };
+    ids.forEach(id => {
+      const v = val(id);
+      $('#' + id + 'v').textContent = id[0] === 'm' ? fmt(v, 1) + ' kg' : id === 'eR' ? fmt(v) : (v > 0 ? '+' : '') + fmt(v, 1) + ' m/s';
+    });
+    const mA = val('mA'), mB = val('mB');
+    $('#pAi').textContent = fmt(mA * sim.vA); $('#pBi').textContent = fmt(mB * sim.vB);
+    $('#pTi').textContent = fmt(mA * sim.vA + mB * sim.vB);
+    $('#Ki').textContent = fmt(.5 * mA * sim.vA ** 2 + .5 * mB * sim.vB ** 2);
+    ['pAf', 'pBf', 'pTf', 'Kf'].forEach(k => $('#' + k).textContent = '—');
+    $('#verdict').innerHTML = '';
+    $('#simMsg').textContent = sim.vA > sim.vB ? 'Listo. Presiona “Lanzar”.' : 'Con estas velocidades A nunca alcanza a B. Haz que A vaya más rápido hacia la derecha que B.';
+    draw();
+  }
+  function collide() {
+    const mA = val('mA'), mB = val('mB'), e = val('eR'), u1 = sim.vA, u2 = sim.vB, M = mA + mB, P0 = mA * u1 + mB * u2;
+    sim.vA = (P0 - mB * e * (u1 - u2)) / M;
+    sim.vB = (P0 + mA * e * (u1 - u2)) / M;
+    sim.collided = true;
+    const Ki = .5 * mA * u1 ** 2 + .5 * mB * u2 ** 2, Kf = .5 * mA * sim.vA ** 2 + .5 * mB * sim.vB ** 2;
+    $('#pAf').textContent = fmt(mA * sim.vA); $('#pBf').textContent = fmt(mB * sim.vB);
+    $('#pTf').textContent = fmt(mA * sim.vA + mB * sim.vB); $('#Kf').textContent = fmt(Kf);
+    const type = e >= 0.999 ? ['Choque elástico', 'oksoft', 'ok'] : e <= 0.001 ? ['Completamente inelástico', 'badsoft', 'bad'] : ['Choque inelástico', 'casoft', 'ca'];
+    const lost = Ki > 0 ? (Ki - Kf) / Ki * 100 : 0;
+    $('#verdict').innerHTML = `<span class="rounded-full px-3 py-1 font-semibold bg-${type[1]} text-${type[2]}">${type[0]}</span>
+      <span class="rounded-full px-3 py-1 bg-oksoft text-ok num">p total se conserva ✓</span>
+      <span class="rounded-full px-3 py-1 bg-sunk num">${lost < 0.05 ? 'K se conserva' : 'K perdida: ' + fmt(Ki - Kf) + ' J (' + fmt(lost, 0) + ' %)'}</span>`;
+    $('#simMsg').textContent = `Después: v_A = ${fmt(sim.vA)} m/s, v_B = ${fmt(sim.vB)} m/s.`;
+  }
+  function step(ts) {
+    const dt = Math.min((ts - last) / 1000, 0.05) * 0.6; last = ts;
+    sim.xA += sim.vA * dt; sim.xB += sim.vB * dt; sim.t += dt;
+    if (!sim.collided && sim.xA + W >= sim.xB) { const mid = (sim.xA + W + sim.xB) / 2; sim.xA = mid - W; sim.xB = mid; collide(); }
+    let stop = sim.t > 8;
+    if (sim.xA < 0) { sim.xA = 0; stop = true; } if (sim.xB + W > L) { sim.xB = L - W; stop = true; }
+    if (sim.xB < W && !sim.collided) { stop = true; } if (sim.xA + W > L - W) { stop = true; }
+    draw();
+    if (stop) { sim.running = false; if (!sim.collided) $('#simMsg').textContent = 'Un carrito llegó al final del riel antes de chocar.'; return; }
+    raf = requestAnimationFrame(step);
+  }
+  function draw() {
+    const w = $('#trackBox').clientWidth, h = 190, dpr = window.devicePixelRatio || 1;
+    if (cv.width !== Math.round(w * dpr)) { cv.width = Math.round(w * dpr); cv.height = h * dpr; cv.style.height = h + 'px'; }
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, w, h);
+    const pad = 14, sx = (w - pad * 2) / L, X = m => pad + m * sx, base = 130;
+    const ink = css('--ink'), muted = css('--muted'), line = css('--line'), sunk = css('--sunk');
+    // rail
+    ctx.fillStyle = sunk; ctx.fillRect(pad, base, w - pad * 2, 14);
+    ctx.strokeStyle = line; ctx.strokeRect(pad + .5, base + .5, w - pad * 2 - 1, 13);
+    ctx.fillStyle = line; for (let m = 0.1; m < L; m += 0.2) { ctx.beginPath(); ctx.arc(X(m), base + 7, 1.6, 0, 7); ctx.fill(); }
+    // ruler
+    ctx.fillStyle = muted; ctx.strokeStyle = muted; ctx.font = '11px ' + css('--f-mono'); ctx.textAlign = 'center';
+    for (let m = 0; m <= L + 1e-9; m += 0.5) {
+      const big = Math.abs(m - Math.round(m)) < 1e-6; ctx.beginPath(); ctx.moveTo(X(m), base + 18); ctx.lineTo(X(m), base + 18 + (big ? 8 : 4)); ctx.stroke();
+      if (big) ctx.fillText(m + ' m', Math.min(Math.max(X(m), pad + 10), w - pad - 10), base + 40);
+    }
+    const cart = (x, m, v, col, lab) => {
+      const ch = 24 + m * 6, cw = W * sx, x0 = X(x), y0 = base - ch - 2;
+      ctx.fillStyle = col; roundRect(x0, y0, cw, ch, 6); ctx.fill();
+      ctx.fillStyle = css('--surface'); ctx.font = '700 12px ' + css('--f-display'); ctx.textAlign = 'center';
+      ctx.fillText(lab, x0 + cw / 2, y0 + ch / 2 - 1); ctx.font = '11px ' + css('--f-mono'); ctx.fillText(fmt(m, 1) + ' kg', x0 + cw / 2, y0 + ch / 2 + 13);
+      if (Math.abs(v) > 0.01) {
+        const len = Math.max(Math.min(v * 12, 90), -90), cx = x0 + cw / 2, ay = y0 - 14;
+        ctx.strokeStyle = ink; ctx.fillStyle = ink; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(cx, ay); ctx.lineTo(cx + len, ay); ctx.stroke();
+        const d = Math.sign(len); ctx.beginPath(); ctx.moveTo(cx + len, ay); ctx.lineTo(cx + len - 7 * d, ay - 5); ctx.lineTo(cx + len - 7 * d, ay + 5); ctx.fill();
+        ctx.lineWidth = 1; ctx.font = '11px ' + css('--f-mono'); ctx.fillText(fmt(v) + ' m/s', cx + len / 2, ay - 8);
+      }
+    };
+    cart(sim.xA, val('mA'), sim.vA, css('--a'), 'A');
+    cart(sim.xB, val('mB'), sim.vB, css('--b'), 'B');
+  }
+  function roundRect(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
+  function preset(k) {
+    const p = { pdf: [2, 4, 3, 0, 0], billar: [2, 4, 2, 0, 1], frontal: [3, 3, 2, -3, 0.4] }[k];
+    ids.forEach((id, i) => $('#' + id).value = p[i]); initSim();
+  }
+  ids.forEach(id => $('#' + id).addEventListener('input', initSim));
+  document.querySelectorAll('.preset').forEach(b => b.addEventListener('click', () => preset(b.dataset.p)));
+  $('#resetSim').addEventListener('click', initSim);
+  $('#launch').addEventListener('click', () => {
+    if (sim.running) return;
+    if (sim.t > 0) initSim();
+    if (!(sim.vA > sim.vB)) return;
+    sim.running = true; $('#simMsg').textContent = 'En movimiento…'; last = performance.now(); raf = requestAnimationFrame(step);
+  });
+  new ResizeObserver(() => draw()).observe($('#trackBox'));
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', draw);
+  new MutationObserver(draw).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+  /* ---------------- boot ---------------- */
+  initSim(); renderLesson(); renderQuiz(); buildDnd(); buildCards(); render();
+  document.fonts && document.fonts.ready.then(draw);
+})();
+</script>
+
+</body>
+</html>
